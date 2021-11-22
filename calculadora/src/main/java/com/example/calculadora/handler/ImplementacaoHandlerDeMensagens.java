@@ -1,58 +1,47 @@
 package com.example.calculadora.handler;
 
-import com.example.calculadora.exception.CalculatorException;
-import com.example.calculadora.operacao.Operacao;
+//import com.example;
+import com.example.calculadora.operacao.*;
+import com.example.calculadora.result.ResultadoEsperado;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 
+@Component
 public class ImplementacaoHandlerDeMensagens implements HandlerDeMensagens {
     @Override
-    public String processarMensagem(String mensagem) {
-        String resultado = null;
-        try {
-            String[] arrayMensagem = mensagem.split(",");
-
-            Operacao ope = criarObjeto(arrayMensagem[0]);
-            BigDecimal valor1 = new BigDecimal(arrayMensagem[1]);
-            BigDecimal valor2 = new BigDecimal(arrayMensagem[2]);
-
-            resultado = ope.calcular(valor1, valor2).toString();
-
-        }
-        catch (ArrayIndexOutOfBoundsException e) {
-            String exceptionMessage = String.format("Mensagem mal formada! '%s'", mensagem);
-            logger.error(exceptionMessage);
-            throw new CalculatorException(exceptionMessage + " Uso: 'OPER,A,B'", e);
-        }
-        catch (ClassNotFoundException e) {
-            String exceptionMessage = String.format("Operação desconhecida! '%s'", mensagem);
-            logger.error(exceptionMessage);
-            throw new CalculatorException(exceptionMessage, e);
-        }
-        catch (InstantiationException e) {
-            String exceptionMessage = String.format("Não é possível instanciar a operação! %s", e.getMessage());
-            logger.error(exceptionMessage);
-            throw new CalculatorException(exceptionMessage, e);
-
-        }
-        catch (IllegalAccessException e) {
-            logger.error(e.getMessage());
-            throw new CalculatorException(e);
-        } catch (InvocationTargetException | NoSuchMethodException e) {
-            e.printStackTrace();
-        }
-
-        return resultado;
-
+    public ResultadoEsperado processarMensagem(String tipoOperacao, BigDecimal valor1, BigDecimal valor2) {
+        BigDecimal resultado;
+        Operacao ope = null;
+        ope = criarObjeto(tipoOperacao);
+        resultado = ope.calcular(valor1, valor2);
+        return new ResultadoEsperado(resultado);
     }
 
-    private static Operacao criarObjeto(String nomeDaClasse) throws ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        String operPackage = "com.example.calculadora.operacao";
-        Class<?> clazz = Class.forName(operPackage + "." + nomeDaClasse);
-        return (Operacao) clazz.getDeclaredConstructor().newInstance();
+    private static Operacao criarObjeto(String nomeDaClasse)  {
+        Operacao operacao;
+        switch (nomeDaClasse) {
+            case "sum":
+                operacao = new Adicao();
+                break;
+            case "sub":
+                operacao = new Subtracao();
+                break;
+            case "mul":
+                operacao = new Multiplicacao();
+            case "div":
+                operacao = new Divisao();
+                break;
+            default:
+                operacao = null;
+                break;
+
+        }
+
+        return (Operacao) operacao;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(ImplementacaoHandlerDeMensagens.class);
